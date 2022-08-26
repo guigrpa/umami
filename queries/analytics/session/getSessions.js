@@ -1,11 +1,5 @@
 import { CLICKHOUSE, RELATIONAL } from 'lib/constants';
-import {
-  getDateFormatClickhouse,
-  prisma,
-  rawQueryClickhouse,
-  runAnalyticsQuery,
-  runQuery,
-} from 'lib/db';
+import { getDateFormatClickhouse, rawQuery, rawQueryClickhouse, runAnalyticsQuery } from 'lib/db';
 
 export async function getSessions(...args) {
   return runAnalyticsQuery({
@@ -15,40 +9,44 @@ export async function getSessions(...args) {
 }
 
 async function relationalQuery(websites, start_at) {
-  return runQuery(
-    prisma.session.findMany({
-      where: {
-        website: {
-          website_id: {
-            in: websites,
-          },
-        },
-        created_at: {
-          gte: start_at,
-        },
-      },
-    }),
+  const params = [start_at];
+
+  return rawQuery(
+    `
+    select * 
+    from session s
+    where s.session_id in (
+      select distinct session_id
+      from "event" e
+      where e.website_id in (${websites.join(',')})
+        and e.created_at >= $1
+      union
+      select distinct session_id
+      from "pageview" v
+      where v.website_id in (${websites.join(',')})
+        and v.created_at >= $1
+    )
+    `,
+    params,
   );
 }
 
 async function clickhouseQuery(websites, start_at) {
   return rawQueryClickhouse(
     `
-    select
-      session_id,
-      session_uuid,
-      website_id,
-      created_at,
-      hostname,
-      browser,
-      os,
-      device,
-      screen,
-      "language",
-      country
-    from session
-    where website_id in (${websites.join[',']}
-      and created_at >= ${getDateFormatClickhouse(start_at)})
+    select * 
+    from session s
+    where s.session_id in (
+      select distinct session_id
+      from "event" e
+      where e.website_id in (${websites.join(',')})
+        and e.created_at >= ${getDateFormatClickhouse(start_at)}
+      union
+      select distinct session_id
+      from "pageview" v
+      where v.website_id in (${websites.join(',')})
+        and v.created_at >= ${getDateFormatClickhouse(start_at)}
+    )
     `,
   );
 }
