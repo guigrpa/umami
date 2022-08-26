@@ -97,13 +97,25 @@ export default function RealtimeDashboard() {
       const { pageviews, sessions, events, timestamp } = updates;
       const time = subMinutes(startOfMinute(new Date()), REALTIME_RANGE).getTime();
 
-      setData(state => ({
-        ...state,
-        pageviews: mergeData(state.pageviews, pageviews, time),
-        sessions: mergeData(state.sessions, sessions, time),
-        events: mergeData(state.events, events, time),
-        timestamp,
-      }));
+      setData(state => {
+        const allPageviews = mergeData(state.pageviews, pageviews, time);
+        const allEvents = mergeData(state.events, events, time);
+        const sessionIds = [
+          ...allPageviews.map(o => o.session_id),
+          ...allEvents.map(o => o.session_id),
+        ];
+        const allSessions = mergeData(state.sessions, sessions, 0);
+        const filteredSessions = allSessions.filter(({ session_id }) =>
+          sessionIds.includes(session_id),
+        );
+        return {
+          ...state,
+          pageviews: allPageviews,
+          sessions: filteredSessions,
+          events: allEvents,
+          timestamp,
+        };
+      });
     }
   }, [updates]);
 
