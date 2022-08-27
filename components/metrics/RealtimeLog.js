@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { FixedSizeList } from 'react-window';
 import firstBy from 'thenby';
+import { startOfDay } from 'date-fns';
 import Icon from 'components/common/Icon';
 import Dot from 'components/common/Dot';
 import FilterButtons from 'components/common/FilterButtons';
@@ -137,6 +138,10 @@ export default function RealtimeLog({ data, websites, websiteId }) {
     return dateFormat(new Date(created_at), 'pp', locale);
   }
 
+  function getSessionDate({ created_at }) {
+    return dateFormat(new Date(created_at), 'd MMM', locale);
+  }
+
   function getColor(row) {
     const { session_id } = row;
 
@@ -150,7 +155,15 @@ export default function RealtimeLog({ data, websites, websiteId }) {
         <div>
           <Dot color={getColor(row)} />
         </div>
-        <div className={styles.time}>{getTime(row)}</div>
+        <div className={styles.time}>
+          {getTime(row)}
+          {row.session_id != null && row.created_at < startOfDay(new Date()).toISOString() && (
+            <>
+              <br />
+              {getSessionDate(row)}
+            </>
+          )}
+        </div>
         <div className={styles.detail}>
           <Icon className={styles.icon} icon={getIcon(row)} />
           {getDetail(row)}
