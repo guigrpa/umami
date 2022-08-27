@@ -134,12 +134,10 @@ export default function RealtimeLog({ data, websites, websiteId }) {
     }
   }
 
-  function getTime({ created_at }) {
-    return dateFormat(new Date(created_at), 'pp', locale);
-  }
-
-  function getSessionDate({ created_at }) {
-    return dateFormat(new Date(created_at), 'd MMM', locale);
+  function getTime({ session_id, created_at }) {
+    const format =
+      session_id != null && created_at < startOfDay(new Date()).toISOString() ? 'd MMM' : 'pp';
+    return dateFormat(new Date(created_at), format, locale);
   }
 
   function getColor(row) {
@@ -155,15 +153,7 @@ export default function RealtimeLog({ data, websites, websiteId }) {
         <div>
           <Dot color={getColor(row)} />
         </div>
-        <div className={styles.time}>
-          {getTime(row)}
-          {row.session_id != null && row.created_at < startOfDay(new Date()).toISOString() && (
-            <>
-              <br />
-              {getSessionDate(row)}
-            </>
-          )}
-        </div>
+        <div className={styles.time}>{getTime(row)}</div>
         <div className={styles.detail}>
           <Icon className={styles.icon} icon={getIcon(row)} />
           {getDetail(row)}
