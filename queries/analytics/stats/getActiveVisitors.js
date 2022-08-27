@@ -15,10 +15,18 @@ async function relationalQuery(website_id) {
 
   return rawQuery(
     `
-    select count(distinct session_id) x
-    from pageview
-    where website_id = $1
-    and created_at >= $2
+    select count(distinct s.session_id) x
+    from (
+      select distinct session_id
+      from "event" e
+      where e.website_id = $1
+        and e.created_at >= $2
+      union
+      select distinct session_id
+      from "pageview" v
+      where v.website_id = $1
+        and v.created_at >= $2
+    ) s
     `,
     params,
   );
@@ -29,10 +37,18 @@ async function clickhouseQuery(website_id) {
 
   return rawQueryClickhouse(
     `
-    select count(distinct session_uuid) x
-    from pageview
-    where website_id = $1
-    and created_at >= ${getDateFormatClickhouse(subMinutes(new Date(), 5))}
+    select count(distinct s.session_id) x
+    from (
+      select distinct session_id
+      from "event" e
+      where e.website_id = $1
+        and e.created_at >= ${getDateFormatClickhouse(subMinutes(new Date(), 5))}
+      union
+      select distinct session_id
+      from "pageview" v
+      where v.website_id = $1
+        and v.created_at >= ${getDateFormatClickhouse(subMinutes(new Date(), 5))}
+    ) s
     `,
     params,
   );
